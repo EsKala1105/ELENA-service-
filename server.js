@@ -143,6 +143,10 @@ io.on("connection", (socket) => {
     io.emit("server:cPago", info);
   });
 
+  socket.on("client:cClientes", (info) => {
+    io.emit("server:cClientes", info);
+  });
+
   // Maneja el evento cuando un cliente se desconecta
   socket.on("disconnect", () => {
     console.log(`Un cliente se ha desconectado : ${socket.id}`);
