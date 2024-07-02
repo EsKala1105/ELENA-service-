@@ -29,20 +29,6 @@ router.post("/add-cliente", async (req, res) => {
   }
 });
 
-router.get("/get-specific-cliente/:document", async (req, res) => {
-  try {
-    const documento = req.params.document;
-    const cliente = await clientes.findOne({ dni: documento });
-    if (!cliente) {
-      return res.status(404).json(null); // Devolver un código de estado 404 si el cliente no se encuentra
-    }
-    res.json(cliente);
-  } catch (error) {
-    console.error("Error al obtener los datos:", error);
-    res.status(500).json({ mensaje: "Error al obtener los datos" });
-  }
-});
-
 router.put("/update-puntos-orden-servicio/:dni", async (req, res) => {
   const dni = req.params.dni;
   const idOrdenService = req.body.idOrdenService;
@@ -142,7 +128,7 @@ router.delete("/delete-cliente/:id", async (req, res) => {
     }
 
     // Enviar el ID del cliente eliminado junto con un mensaje de éxito
-    res.json(deletedCliente._id);
+    res.json(deletedCliente);
   } catch (error) {
     console.error("Error al eliminar el cliente:", error);
     res.status(500).json({ mensaje: "Error al eliminar el cliente" });

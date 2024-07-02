@@ -1,22 +1,30 @@
 import express from "express";
-import Promociones from "../models/promociones.js"; // Asegúrate de que la ruta y la extensión del archivo sean correctas
+import Promociones from "../models/promociones.js";
+import Cupones from "../models/cupones.js";
 
 const router = express.Router();
 
-router.put("/eliminar-promocion", async (req, res) => {
+router.delete("/eliminar-promocion/:id", async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
 
-    const actualizada = await Promociones.findOneAndUpdate(
-      { _id: id },
-      { $set: { state: "eliminado" } },
-      { new: true }
-    );
+    // Elimina la promoción y captura su `_id` y `codigo`
+    const promocion = await Promociones.findByIdAndDelete(id);
 
-    res.status(200).json(actualizada);
+    if (!promocion) {
+      return res.status(404).json({ mensaje: "Promoción no encontrada" });
+    }
+
+    // Elimina los cupones relacionados
+    await Cupones.deleteMany({ codigoPromocion: promocion.codigo });
+
+    res.status(201).json({
+      onAction: "add",
+      info: promocion,
+    });
   } catch (error) {
-    console.error("Error al actualizar la promoción:", error);
-    res.status(500).json({ mensaje: "Error al actualizar la promoción" });
+    console.error("Error al eliminar la promoción:", error);
+    res.status(500).json({ mensaje: "Error al eliminar la promoción" });
   }
 });
 
@@ -33,9 +41,9 @@ router.post("/add-promocion", async (req, res) => {
       vigencia,
       state,
     } = req.body;
+
     if (
-      !prenda ||
-      prenda.length === 0 ||
+      (prenda.length === 0 && alcance === "Parte") ||
       !tipoDescuento ||
       !tipoPromocion ||
       !alcance ||
@@ -122,7 +130,7 @@ async function generarCodigoPromocionUnico() {
 }
 
 router.get("/get-promociones", (req, res) => {
-  Promociones.find({ state: { $ne: "eliminado" } })
+  Promociones.find()
     .then((promos) => {
       res.json(promos);
     })

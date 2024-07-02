@@ -1,6 +1,7 @@
 import express from "express";
 import Servicio from "../../models/portafolio/servicios.js";
 import Categoria from "../../models/categorias.js";
+import Promocion from "../../models/promociones.js";
 import moment from "moment"; // Importa moment para trabajar con fechas
 
 const router = express.Router();
@@ -92,9 +93,31 @@ router.delete("/delete-servicio/:idServicio", async (req, res) => {
   const { idServicio } = req.params;
 
   try {
-    const productoEliminado = await Servicio.findByIdAndRemove(idServicio);
-    if (productoEliminado) {
-      return res.json({ mensaje: "Servicio eliminado con éxito" });
+    // Verificar si el servicio está siendo usado en Promociones con alcance distinto de "Todos"
+    const promocionesConServicio = await Promocion.find(
+      { prenda: idServicio, alcance: { $ne: "Todos" } },
+      { _id: 1, codigo: 1 }
+    );
+
+    if (promocionesConServicio.length > 0) {
+      const codigos = promocionesConServicio.map(
+        (promocion) => promocion.codigo
+      );
+      return res.status(400).json({
+        mensaje:
+          "No se puede eliminar el servicio porque está siendo utilizado en una o mas promociones.",
+        codigos,
+      });
+    }
+
+    // Si el servicio no está siendo usado en promociones, procede a eliminarlo
+    const servicioEliminado = await Servicio.findByIdAndRemove(idServicio);
+
+    if (servicioEliminado) {
+      return res.json({
+        mensaje: "Servicio eliminado con éxito",
+        idServicioEliminado: servicioEliminado._id,
+      });
     } else {
       return res.status(404).json({ mensaje: "Servicio no encontrado" });
     }
